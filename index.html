@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .container {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+    h3 {
+      margin: 5px 0 15px;
+      font-size: 14px;
+      color: #555;
+      font-weight: normal;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 8px;
+      display: block;
+      text-align: left;
+      font-size: 12px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .hidden {
+      display: none;
+    }
+    .relative {
+      position: relative;
+    }
+    .autocomplete-items {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      z-index: 99;
+      max-height: 150px;
+      overflow-y: auto;
+      text-align: left;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .autocomplete-items div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .autocomplete-items div:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      console.log("DOM loaded");
+      autocomplete(document.getElementById("itemDescription"), itemDescriptions);
+    });
+
+    function autocomplete(inp, arr) {
+      let currentFocus;
+      inp.addEventListener("input", function() {
+        let val = this.value;
+        closeAllLists();
+        if (!val) return false;
+        currentFocus = -1;
+        let divList = document.createElement("div");
+        divList.setAttribute("id", this.id + "autocomplete-list");
+        divList.setAttribute("class", "autocomplete-items");
+        this.parentNode.appendChild(divList);
+
+        arr.forEach(item => {
+          if (item.toLowerCase().includes(val.toLowerCase())) {
+            let itemDiv = document.createElement("div");
+            itemDiv.innerHTML = `<strong>${item.substr(0, val.length)}</strong>${item.substr(val.length)}`;
+            itemDiv.innerHTML += `<input type='hidden' value='${item}'>`;
+            itemDiv.addEventListener("click", function() {
+              inp.value = this.getElementsByTagName("input")[0].value;
+              closeAllLists();
+            });
+            divList.appendChild(itemDiv);
+          }
+        });
+      });
+
+      inp.addEventListener("keydown", function(e) {
+        let list = document.getElementById(this.id + "autocomplete-list");
+        if (list) list = list.getElementsByTagName("div");
+        if (e.keyCode === 40) { // Down arrow
+          currentFocus++;
+          addActive(list);
+        } else if (e.keyCode === 38) { // Up arrow
+          currentFocus--;
+          addActive(list);
+        } else if (e.keyCode === 13) { // Enter
+          e.preventDefault();
+          if (currentFocus > -1) {
+            if (list) list[currentFocus].click();
+          }
+        }
+      });
+
+      function addActive(list) {
+        if (!list) return false;
+        removeActive(list);
+        if (currentFocus >= list.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (list.length - 1);
+        list[currentFocus].classList.add("autocomplete-active");
+      }
+
+      function removeActive(list) {
+        for (let i = 0; i < list.length; i++) {
+          list[i].classList.remove("autocomplete-active");
+        }
+      }
+
+      function closeAllLists(elmnt) {
+        let lists = document.getElementsByClassName("autocomplete-items");
+        for (let i = 0; i < lists.length; i++) {
+          if (elmnt !== lists[i] && elmnt !== inp) {
+            lists[i].parentNode.removeChild(lists[i]);
+          }
+        }
+      }
+      document.addEventListener("click", function(e) {
+        closeAllLists(e.target);
+      });
+    }
+
+    function updateFields() {
+      let type = document.getElementById("transactionType").value;
+      document.getElementById("receivingFields").classList.toggle("hidden", type !== "RECEIVING");
+      document.getElementById("issuanceFields").classList.toggle("hidden", type !== "ISSUANCE");
+    }
+
+    function formatDate(date, format) {
+      const options = format === "MM/DD/YYYY"
+        ? { month: 'long', day: '2-digit', year: 'numeric' }
+        : { day: '2-digit', month: 'long', year: 'numeric' };
+      return new Date(date).toLocaleDateString('en-US', options);
+    }
+
+    function submitForm() {
+  const date = document.getElementById("date").value;
+  const productionDate = document.getElementById("productionDate").value;
+
+  if (!date || !productionDate) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  const formattedDate = formatDate(date, "MM/DD/YYYY"); // Format: February 17, 2025
+  const formattedProductionDate = formatDate(productionDate, "DD/MM/YYYY"); // Format: 17, February 2025
+
+  let formData = {
+    date: formattedDate,
+    itemDescription: document.getElementById("itemDescription").value,
+    containerNo: document.getElementById("containerNo").value,
+    qtyCs: document.getElementById("qtyCs").value,
+    qtyKg: document.getElementById("qtyKg").value,
+    wrrNo: document.getElementById("wrrNo").value,
+    rirNo: document.getElementById("rirNo").value,
+    wwrNo: document.getElementById("wwrNo").value,
+    iirNo: document.getElementById("iirNo").value,
+    productionDate: formattedProductionDate,
+    transactionType: document.getElementById("transactionType").value
+  };
+
+  console.log("Submitting form data:", formData);
+
+  fetch('https://script.google.com/a/macros/jbtec.ph/s/AKfycbw-VwsDFlswJQxcPQPk5-dEgC0cS2SMOqb9JIpiAMN-nMrG9t04TQ7zQeUx296FpPU0Qw/exec', {
+    method: 'POST',
+    body: JSON.stringify(formData),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      alert(data.error);
+    } else {
+      alert(data.message);
+      document.getElementById("inventoryForm").reset();
+    }
+  })
+  .catch(error => {
+    console.error("Error submitting data:", error);
+    alert("Error submitting data. Please check the console for details.");
+  });
+}
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Multi-M Food Corporation</h2>
+    <h3>RM Inventory Input Form</h3>
+
+    <form id="inventoryForm">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required> <!-- Calendar picker for Date -->
+
+      <label for="itemDescription">Item Description:</label>
+      <div class="relative">
+        <input type="text" id="itemDescription" placeholder="Search item..." required>
+      </div>
+
+      <label for="containerNo">Container No:</label>
+      <input type="text" id="containerNo" required>
+
+      <label for="qtyCs">Qty (cs):</label>
+      <input type="number" id="qtyCs" required>
+
+      <label for="qtyKg">Qty (kg):</label>
+      <input type="number" id="qtyKg" required>
+
+      <label for="transactionType">Transaction Type:</label>
+      <select id="transactionType" onchange="updateFields()" required>
+        <option value="RECEIVING">RECEIVING</option>
+        <option value="ISSUANCE">ISSUANCE</option>
+      </select>
+
+      <div id="receivingFields">
+        <label for="wrrNo">WRR No:</label>
+        <input type="text" id="wrrNo" required>
+        <label for="rirNo">RIR No:</label>
+        <input type="text" id="rirNo" required>
+      </div>
+
+      <div id="issuanceFields" class="hidden">
+        <label for="wwrNo">WWR No:</label>
+        <input type="text" id="wwrNo" required>
+        <label for="iirNo">IIR No:</label>
+        <input type="text" id="iirNo" required>
+      </div>
+
+      <label for="productionDate">Production Date:</label>
+      <input type="date" id="productionDate" required> <!-- Calendar picker for Production Date -->
+
+      <button type="button" onclick="submitForm()">Submit</button>
+    </form>
+  </div>
+</body>
+</html>
