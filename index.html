@@ -181,7 +181,7 @@
       return new Date(date).toLocaleDateString('en-US', options);
     }
 
-    function submitForm() {
+  function submitForm() {
   const date = document.getElementById("date").value;
   const productionDate = document.getElementById("productionDate").value;
 
@@ -209,7 +209,20 @@
 
   console.log("Submitting form data:", formData);
 
-  fetch('https://script.google.com/a/macros/jbtec.ph/s/AKfycbw-VwsDFlswJQxcPQPk5-dEgC0cS2SMOqb9JIpiAMN-nMrG9t04TQ7zQeUx296FpPU0Qw/exec', {
+  // Use google.script.run to submit data
+  google.script.run
+    .withSuccessHandler(function(response) {
+      alert(response.message);
+      document.getElementById("inventoryForm").reset();
+    })
+    .withFailureHandler(function(error) {
+      console.error("Error submitting data:", error);
+      alert("Error submitting data. Please check the console for details.");
+    })
+    .submitData(formData);
+}
+
+  fetch('https://script.google.com/macros/s/AKfycbwvpziFoo005NdgYLVOs1Z881QdzGdkEYjQ9lutDarsfA3xT25DIKuEPbeWodpHM6ttgg/exec', {
     method: 'POST',
     body: JSON.stringify(formData),
     headers: {
